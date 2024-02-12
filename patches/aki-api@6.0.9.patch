@@ -1,0 +1,91 @@
+diff --git a/dist/src/Akinator.js b/dist/src/Akinator.js
+index 41c8b86b0640c3ee7b0d9976d07aeac485fed572..6cde28774f7556ee929b0951c307b1608ddb5ac8 100644
+--- a/dist/src/Akinator.js
++++ b/dist/src/Akinator.js
+@@ -13,15 +13,15 @@ var answers;
+     answers[answers["ProbablyNot"] = 4] = "ProbablyNot";
+ })(answers = exports.answers || (exports.answers = {}));
+ class Akinator {
+-    constructor({ region, childMode, proxyOptions }) {
++    constructor({ region, childMode, proxyOptions, currentStep, url, urlApiWs, progress, session, signature, challenge_auth, uid, frontaddr }) {
+         if (!region || !Client_1.regions.includes(region)) {
+             throw new Error('Please specify a correct region. You can import regions I support or view docs. Then use it like so: new Aki({ region })');
+         }
+-        this.currentStep = 0;
++        this.currentStep = currentStep ?? 0;
+         this.region = region;
+-        this.uri = undefined;
+-        this.urlApiWs = undefined;
+-        this.progress = 0.00;
++        this.uri = url;
++        this.urlApiWs = urlApiWs;
++        this.progress = progress ?? 0.00;
+         this.guessCount = 0;
+         this.childMode = {
+             childMod: childMode === true,
+@@ -37,8 +37,15 @@ class Akinator {
+         else {
+             this.config = {};
+         }
++
++        this.session = session;
++        this.signature = signature;
+         this.question = '';
++        this.challenge_auth = challenge_auth;
+         this.answers = [];
++        this.uid = uid;
++        this.frontaddr = frontaddr;
++        this.uriObj = {uid, frontaddr};
+     }
+     /**
+     * Starts the akinator session and game.
+@@ -76,6 +83,15 @@ class Akinator {
+             throw new functions_1.AkinatorAPIError(result, this.region);
+         }
+     }
++
++    async startWithoutSession(){
++        const server = await (0, functions_1.regionURL)(this.region, this.config);
++        if (!server)
++            throw new Error(`Could not find a server matching the region ${this.region}`);
++        this.uri = server.url;
++        this.urlApiWs = server.urlWs;
++    }
++
+     /*
+      * Continue to guess after a "win" (contine to play after a wrong result).
+      */
+diff --git a/typings/src/Akinator.d.ts b/typings/src/Akinator.d.ts
+index e4990f04ca4f9c7c3c20699dd7a7bd2953267e95..fc27126136c8f61a0fb6b8f030227a20ead8d76a 100644
+--- a/typings/src/Akinator.d.ts
++++ b/typings/src/Akinator.d.ts
+@@ -14,6 +14,15 @@ interface AkinatorConstructor {
+     region: region;
+     childMode?: boolean;
+     proxyOptions?: string | HttpsProxyAgentOptions<any>;
++    currentStep?: number
++    url?: string
++    urlApiWs?: string
++    progress?: number  
++    session?: string
++    signature?: string
++    challenge_auth?: string
++    uid?: string
++    frontaddr?: string
+ }
+ export declare enum answers {
+     Yes = 0,
+@@ -49,11 +58,12 @@ export default class Akinator {
+     signature: string | undefined;
+     challenge_auth: string | undefined;
+     config: AxiosRequestConfig;
+-    constructor({ region, childMode, proxyOptions }: AkinatorConstructor);
++    constructor({ region, childMode, proxyOptions, currentStep, url, urlApiWs, progress, session, signature, challenge_auth, uid, frontaddr }: AkinatorConstructor);
+     /**
+     * Starts the akinator session and game.
+     */
+     start(): Promise<question>;
++    startWithoutSession(): Promise<void>;
+     continue(): Promise<question>;
+     /**
+      * Gets the next question for the akinator session.
