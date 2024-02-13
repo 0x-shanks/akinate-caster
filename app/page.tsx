@@ -104,7 +104,7 @@ export default async function Home({
   // Here: do a server side side effect either sync or async (using await), such as minting an NFT if you want.
   // example: load the users credentials & check they have an NFT
 
-  console.log("info: state is:", state);
+  // console.log("info: state is:", state);
 
   const baseUrl = process.env.NEXT_PUBLIC_HOST || "http://localhost:3000";
 
@@ -129,7 +129,6 @@ export default async function Home({
       frontaddr: state.f,
     });
     await aki.startWithoutSession();
-    console.log("answer", state?.a <= 2 ? state?.a - 1 : state?.a);
     await aki.step(state?.a <= 2 ? state?.a - 1 : state?.a);
   }
 
@@ -177,6 +176,7 @@ export default async function Home({
           f: aki.frontaddr ?? "",
         }}
         previousFrame={previousFrame}
+        pathname="/"
       >
         <FrameImage aspectRatio="1:1">
           {isEnd ? (
@@ -187,9 +187,9 @@ export default async function Home({
                 tw="absolute w-full h-full "
                 src={result?.guesses[0]?.absolute_picture_path}
               />
-              <div tw="absolute top-0 right-0 display: flex justify-center items-center text-4xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
+              {/* <div tw="absolute top-0 right-0 display: flex justify-center items-center text-4xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
                 {"Progress: " + aki.progress}
-              </div>
+              </div> */}
               <div tw="absolute bottom-0 w-full display: flex justify-center items-center text-8xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
                 {"I think of " + result?.guesses[0]?.name ?? ""}
               </div>
@@ -202,9 +202,9 @@ export default async function Home({
                 tw="absolute w-full h-full "
                 src={`${baseUrl}/genie.png`}
               />
-              <div tw="absolute top-0 right-0 display: flex justify-center items-center text-4xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
+              {/* <div tw="absolute top-0 right-0 display: flex justify-center items-center text-4xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
                 {"Progress: " + aki.progress}
-              </div>
+              </div> */}
               <div tw="absolute bottom-0 w-full display: flex justify-center items-center text-8xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
                 {`Q${aki.currentStep + 1}: ${aki.question}`}
               </div>
