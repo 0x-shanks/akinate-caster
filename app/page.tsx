@@ -70,30 +70,30 @@ export default async function Home({
 }: NextServerPageProps) {
   const previousFrame = getPreviousFrame<State>(searchParams);
 
-  const frameMessage = await getFrameMessage(previousFrame.postBody, {
-    ...DEBUG_HUB_OPTIONS,
-  });
+  // const frameMessage = await getFrameMessage(previousFrame.postBody, {
+  //   ...DEBUG_HUB_OPTIONS,
+  // });
 
-  if (frameMessage && !frameMessage?.isValid) {
-    if (frameMessage) {
-      const {
-        isValid,
-        buttonIndex,
-        inputText,
-        castId,
-        requesterFid,
-        casterFollowsRequester,
-        requesterFollowsCaster,
-        likedCast,
-        recastedCast,
-        requesterVerifiedAddresses,
-        requesterUserData,
-      } = frameMessage;
+  // if (frameMessage && !frameMessage?.isValid) {
+  //   if (frameMessage) {
+  //     const {
+  //       isValid,
+  //       buttonIndex,
+  //       inputText,
+  //       castId,
+  //       requesterFid,
+  //       casterFollowsRequester,
+  //       requesterFollowsCaster,
+  //       likedCast,
+  //       recastedCast,
+  //       requesterVerifiedAddresses,
+  //       requesterUserData,
+  //     } = frameMessage;
 
-      console.log("info: frameMessage is:", frameMessage);
-    }
-    throw new Error("Invalid frame payload");
-  }
+  //     console.log("info: frameMessage is:", frameMessage);
+  //   }
+  //   throw new Error("Invalid frame payload");
+  // }
 
   const [state, dispatch] = useFramesReducer<State>(
     reducer,
