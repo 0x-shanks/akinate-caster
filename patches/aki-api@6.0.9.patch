@@ -1,5 +1,5 @@
 diff --git a/dist/src/Akinator.js b/dist/src/Akinator.js
-index 41c8b86b0640c3ee7b0d9976d07aeac485fed572..6cde28774f7556ee929b0951c307b1608ddb5ac8 100644
+index 41c8b86b0640c3ee7b0d9976d07aeac485fed572..47b29a977b5a1f4154dd250f84f0150e398b1c61 100644
 --- a/dist/src/Akinator.js
 +++ b/dist/src/Akinator.js
 @@ -13,15 +13,15 @@ var answers;
@@ -7,7 +7,7 @@ index 41c8b86b0640c3ee7b0d9976d07aeac485fed572..6cde28774f7556ee929b0951c307b160
  })(answers = exports.answers || (exports.answers = {}));
  class Akinator {
 -    constructor({ region, childMode, proxyOptions }) {
-+    constructor({ region, childMode, proxyOptions, currentStep, url, urlApiWs, progress, session, signature, challenge_auth, uid, frontaddr }) {
++    constructor({ region, childMode, proxyOptions, currentStep, url, urlApiWs, progress, session, signature, challenge_auth, uid, frontaddr, question, answer }) {
          if (!region || !Client_1.regions.includes(region)) {
              throw new Error('Please specify a correct region. You can import regions I support or view docs. Then use it like so: new Aki({ region })');
          }
@@ -27,12 +27,14 @@ index 41c8b86b0640c3ee7b0d9976d07aeac485fed572..6cde28774f7556ee929b0951c307b160
          else {
              this.config = {};
          }
+-        this.question = '';
+-        this.answers = [];
 +
 +        this.session = session;
 +        this.signature = signature;
-         this.question = '';
++        this.question = question ?? '';
 +        this.challenge_auth = challenge_auth;
-         this.answers = [];
++        this.answers = answers ?? [];
 +        this.uid = uid;
 +        this.frontaddr = frontaddr;
 +        this.uriObj = {uid, frontaddr};
@@ -80,10 +82,10 @@ index 0a446c886cd15392b5da0d182eecd94ec8bb1a0b..814dca8759abfc381538a4c2454c1284
  exports.Aki = Akinator_1.default;
  Object.defineProperty(exports, "answers", { enumerable: true, get: function () { return Akinator_1.answers; } });
 diff --git a/typings/src/Akinator.d.ts b/typings/src/Akinator.d.ts
-index e4990f04ca4f9c7c3c20699dd7a7bd2953267e95..fc27126136c8f61a0fb6b8f030227a20ead8d76a 100644
+index e4990f04ca4f9c7c3c20699dd7a7bd2953267e95..d794126cb0cc45a1b0364208bfee3c48babbc738 100644
 --- a/typings/src/Akinator.d.ts
 +++ b/typings/src/Akinator.d.ts
-@@ -14,6 +14,15 @@ interface AkinatorConstructor {
+@@ -14,6 +14,17 @@ interface AkinatorConstructor {
      region: region;
      childMode?: boolean;
      proxyOptions?: string | HttpsProxyAgentOptions<any>;
@@ -96,10 +98,12 @@ index e4990f04ca4f9c7c3c20699dd7a7bd2953267e95..fc27126136c8f61a0fb6b8f030227a20
 +    challenge_auth?: string
 +    uid?: string
 +    frontaddr?: string
++    question?: string;
++    answers?: ('Yes' | 'No' | 'Don\'t Know' | 'Probably' | 'Probably not' | string)[];
  }
  export declare enum answers {
      Yes = 0,
-@@ -49,11 +58,12 @@ export default class Akinator {
+@@ -49,11 +60,12 @@ export default class Akinator {
      signature: string | undefined;
      challenge_auth: string | undefined;
      config: AxiosRequestConfig;

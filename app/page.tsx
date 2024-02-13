@@ -9,35 +9,34 @@ import {
   getFrameMessage,
 } from "frames.js/next/server";
 import { Aki } from "aki-api";
+import { kv } from "@vercel/kv";
+import { DEBUG_HUB_OPTIONS } from "./debug/constants";
 
-type State = {
-  a: number; //active
-  st: number; //step
-  se: string; //session
-  si: string; //signature
-  u: string; //uid
-  f: string; //frontaddr
+type SessionState = {
+  step: number;
+  session: string;
+  signature: string;
+  uid: string;
+  frontaddr: string;
+  question: string;
 };
 
-const initialState = {
-  a: 0,
-  st: 0,
-  se: "",
-  si: "",
-  u: "",
-  f: "",
+type FrameState = {
+  answer: number;
+  first: boolean;
 };
 
-const reducer: FrameReducer<State> = (state, action) => {
+const initialState: FrameState = {
+  answer: 0,
+  first: true,
+};
+
+const reducer: FrameReducer<FrameState> = (state, action) => {
   return {
-    a: action.postBody?.untrustedData.buttonIndex
+    answer: action.postBody?.untrustedData.buttonIndex
       ? action.postBody?.untrustedData.buttonIndex
       : 0,
-    st: state.st,
-    se: state.se,
-    si: state.si,
-    u: state.u,
-    f: state.f,
+    first: state.first,
   };
 };
 
@@ -67,34 +66,19 @@ export default async function Home({
   params,
   searchParams,
 }: NextServerPageProps) {
-  const previousFrame = getPreviousFrame<State>(searchParams);
+  const previousFrame = getPreviousFrame<FrameState>(searchParams);
 
-  // const frameMessage = await getFrameMessage(previousFrame.postBody, {
-  //   ...DEBUG_HUB_OPTIONS,
-  // });
+  const frameMessage = await getFrameMessage(previousFrame.postBody, {
+    ...DEBUG_HUB_OPTIONS,
+  });
 
   // if (frameMessage && !frameMessage?.isValid) {
-  //   if (frameMessage) {
-  //     const {
-  //       isValid,
-  //       buttonIndex,
-  //       inputText,
-  //       castId,
-  //       requesterFid,
-  //       casterFollowsRequester,
-  //       requesterFollowsCaster,
-  //       likedCast,
-  //       recastedCast,
-  //       requesterVerifiedAddresses,
-  //       requesterUserData,
-  //     } = frameMessage;
-
-  //     console.log("info: frameMessage is:", frameMessage);
-  //   }
   //   throw new Error("Invalid frame payload");
   // }
 
-  const [state, dispatch] = useFramesReducer<State>(
+  console.log("info: frameMessage is:", frameMessage);
+
+  const [state, dispatch] = useFramesReducer<FrameState>(
     reducer,
     initialState,
     previousFrame
@@ -110,47 +94,113 @@ export default async function Home({
   const region = "en";
   const childMode = true;
 
-  let aki: Aki;
-  if (state.se == "") {
-    aki = new Aki({
-      region,
-      childMode,
-    });
-    await aki.start();
-  } else {
-    aki = new Aki({
-      region,
-      childMode,
-      currentStep: state.st,
-      session: state.se,
-      signature: state.si,
-      uid: state.u,
-      frontaddr: state.f,
-    });
-    await aki.startWithoutSession();
-
-    try {
-      await aki.step(state?.a <= 2 ? state?.a - 1 : state?.a);
-    } catch (e) {
-      console.log("step error", e);
-      await aki.start();
-    }
-  }
-
-  const isEnd = aki.progress >= 90 || aki.currentStep >= 78;
+  let aki: Aki | null = null;
+  let isEnd: boolean | null = null;
   let result: winResult | undefined = undefined;
 
-  if (isEnd) {
-    result = await aki.win();
-    console.log("result:", result);
-    console.log("firstGuess:", aki.answers);
+  if (frameMessage == null) {
+    console.log("Start");
+  }
+
+  if (frameMessage != null) {
+    let session = await kv.get<SessionState>(
+      frameMessage.requesterFid.toString()
+    );
+
+    console.log("info session : ", session);
+
+    if (state.first && state.answer == 2) {
+      await kv.del(frameMessage.requesterFid.toString());
+      session = null;
+    }
+
+    if (!session) {
+      aki = new Aki({
+        region,
+        childMode,
+      });
+      await aki.start();
+      await kv.set<SessionState>(
+        frameMessage.requesterFid.toString(),
+        {
+          step: aki.currentStep,
+          session: aki.session ?? "",
+          signature: aki.signature ?? "",
+          uid: aki.uid ?? "",
+          frontaddr: aki.frontaddr ?? "",
+          question: aki.question ?? "",
+        },
+        {
+          ex: 3600, //1 hour
+        }
+      );
+    } else {
+      aki = new Aki({
+        region,
+        childMode,
+        currentStep: session.step,
+        session: session.session,
+        signature: session.signature,
+        uid: session.uid,
+        frontaddr: session.frontaddr,
+        question: session.question,
+      });
+      await aki.startWithoutSession();
+
+      try {
+        if (!state.first) {
+          await aki.step(
+            state?.answer <= 2 ? state?.answer - 1 : state?.answer
+          );
+          await kv.set<SessionState>(
+            frameMessage.requesterFid.toString(),
+            {
+              step: aki.currentStep,
+              session: aki.session ?? "",
+              signature: aki.signature ?? "",
+              uid: aki.uid ?? "",
+              frontaddr: aki.frontaddr ?? "",
+              question: aki.question ?? "",
+            },
+            {
+              ex: 3600, //1 hour
+            }
+          );
+        }
+      } catch (e) {
+        console.log("step error", e);
+        // await aki.start();
+        // await kv.set<SessionState>(
+        //   "user_1_session",
+        //   {
+        //     step: 0,
+        //     session: aki.session ?? "",
+        //     signature: aki.session ?? "",
+        //     uid: aki.uid ?? "",
+        //     frontaddr: aki.frontaddr ?? "",
+        //   },
+        //   {
+        //     ex: 3600, //1 hour
+        //   }
+        // );
+      }
+    }
+
+    isEnd = aki.progress >= 90 || aki.currentStep >= 78;
+
+    if (isEnd) {
+      result = await aki.win();
+      console.log("result:", result);
+    }
   }
 
   // then, when done, return next frame
   return (
     <div className="p-4">
       <div className="mb-8">
-        <p className="text-3xl font-bold">AkinateCaster</p>
+        {/* <p className="text-3xl font-bold">AkinateCaster</p> */}
+        <img alt="logo" className="w-48" src="/logo.png" />
+
         <p>
           AkinateCaster is an extension that allows akinator to be used in a
           frame.
@@ -164,7 +214,11 @@ export default async function Home({
         <p className="text-lg font-bold">Author</p>
         <a href="https://warpcast.com/nakaj1ma">
           <div className="flex items-center space-x-4">
-            <img src="/profile.png" className="w-10 h-10 rounded-full" />
+            <img
+              alt="profile"
+              src="/profile.png"
+              className="w-10 h-10 rounded-full"
+            />
             <p>0xshanks</p>
           </div>
         </a>
@@ -172,64 +226,69 @@ export default async function Home({
 
       <FrameContainer
         postUrl={`${baseUrl}/frames`}
-        state={{
-          ...state,
-          st: aki.currentStep,
-          se: aki.session ?? "",
-          si: aki.signature ?? "",
-          u: aki.uid ?? "",
-          f: aki.frontaddr ?? "",
-        }}
+        state={{ ...state, first: !aki }}
         previousFrame={previousFrame}
         pathname="/"
       >
         <FrameImage aspectRatio="1:1">
-          {isEnd ? (
-            <div tw="display: flex relative w-full h-full">
-              <img
-                style={{ objectFit: "cover" }}
-                alt="bg"
-                tw="absolute w-full h-full "
-                src={result?.guesses[0]?.absolute_picture_path}
-              />
-              {/* <div tw="absolute top-0 right-0 display: flex justify-center items-center text-4xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
+          {!!aki ? (
+            isEnd ? (
+              <div tw="display: flex relative w-full h-full">
+                <img
+                  style={{ objectFit: "cover" }}
+                  alt="bg"
+                  tw="absolute w-full h-full "
+                  src={result?.guesses[0]?.absolute_picture_path}
+                />
+                {/* <div tw="absolute top-0 right-0 display: flex justify-center items-center text-4xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
                 {"Progress: " + aki.progress}
               </div> */}
-              <div tw="absolute bottom-0 w-full display: flex justify-center items-center text-8xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
-                {"I think of " + result?.guesses[0]?.name ?? ""}
+                <div tw="absolute bottom-0 w-full display: flex justify-center items-center text-8xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
+                  {"I think of " + result?.guesses[0]?.name ?? ""}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div tw="display: flex relative w-full h-full">
+                <img
+                  style={{ objectFit: "cover" }}
+                  alt="bg"
+                  tw="absolute w-full h-full "
+                  src={`${baseUrl}/genie.png`}
+                />
+                {/* <div tw="absolute top-0 right-0 display: flex justify-center items-center text-4xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
+                {"Progress: " + aki.progress}
+              </div> */}
+                <div tw="absolute bottom-0 w-full display: flex justify-center items-center text-8xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
+                  {`Q${aki.currentStep + 1}: ${aki.question}`}
+                </div>
+              </div>
+            )
           ) : (
-            <div tw="display: flex relative w-full h-full">
-              <img
-                style={{ objectFit: "cover" }}
-                alt="bg"
-                tw="absolute w-full h-full "
-                src={`${baseUrl}/genie.png`}
-              />
-              {/* <div tw="absolute top-0 right-0 display: flex justify-center items-center text-4xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
-                {"Progress: " + aki.progress}
-              </div> */}
-              <div tw="absolute bottom-0 w-full display: flex justify-center items-center text-8xl px-20 pb-8 pt-4 bg-black/50 text-white text-wrap text-center">
-                {`Q${aki.currentStep + 1}: ${aki.question}`}
-              </div>
-            </div>
+            <img
+              style={{ objectFit: "cover" }}
+              alt="bg"
+              tw="absolute w-full h-full "
+              src={`${baseUrl}/first.png`}
+            />
           )}
         </FrameImage>
 
-        {!!aki.answers[0] && !isEnd ? (
+        {!aki ? <FrameButton>Start</FrameButton> : null}
+        {!aki ? <FrameButton>Reset</FrameButton> : null}
+
+        {!!aki?.answers[0] && !isEnd ? (
           <FrameButton>{aki.answers[0] as string}</FrameButton>
         ) : null}
 
-        {!!aki.answers[1] && !isEnd ? (
+        {!!aki?.answers[1] && !isEnd ? (
           <FrameButton>{aki.answers[1] as string}</FrameButton>
         ) : null}
 
-        {!!aki.answers[3] && !isEnd ? (
+        {!!aki?.answers[3] && !isEnd ? (
           <FrameButton>{aki.answers[3] as string}</FrameButton>
         ) : null}
 
-        {!!aki.answers[4] && !isEnd ? (
+        {!!aki?.answers[4] && !isEnd ? (
           <FrameButton>{aki.answers[4] as string}</FrameButton>
         ) : null}
       </FrameContainer>
