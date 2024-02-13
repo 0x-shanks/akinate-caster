@@ -55,6 +55,18 @@ index 41c8b86b0640c3ee7b0d9976d07aeac485fed572..6cde28774f7556ee929b0951c307b160
      /*
       * Continue to guess after a "win" (contine to play after a wrong result).
       */
+diff --git a/dist/src/index.js b/dist/src/index.js
+index 0a446c886cd15392b5da0d182eecd94ec8bb1a0b..814dca8759abfc381538a4c2454c128457c24f9b 100644
+--- a/dist/src/index.js
++++ b/dist/src/index.js
+@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.answers = exports.regions = exports.Aki = void 0;
+ const fs = require("fs");
+ const https = require("https");
+-https.globalAgent.options.ca = fs.readFileSync('node_modules/node_extra_ca_certs_mozilla_bundle/ca_bundle/ca_intermediate_root_bundle.pem');
+ const Akinator_1 = require("./Akinator");
+ exports.Aki = Akinator_1.default;
+ Object.defineProperty(exports, "answers", { enumerable: true, get: function () { return Akinator_1.answers; } });
 diff --git a/typings/src/Akinator.d.ts b/typings/src/Akinator.d.ts
 index e4990f04ca4f9c7c3c20699dd7a7bd2953267e95..fc27126136c8f61a0fb6b8f030227a20ead8d76a 100644
 --- a/typings/src/Akinator.d.ts
