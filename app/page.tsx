@@ -8,7 +8,6 @@ import {
   useFramesReducer,
   getFrameMessage,
 } from "frames.js/next/server";
-import Link from "next/link";
 import { DEBUG_HUB_OPTIONS } from "./debug/constants";
 import { Aki } from "aki-api";
 
@@ -76,6 +75,23 @@ export default async function Home({
   });
 
   if (frameMessage && !frameMessage?.isValid) {
+    if (frameMessage) {
+      const {
+        isValid,
+        buttonIndex,
+        inputText,
+        castId,
+        requesterFid,
+        casterFollowsRequester,
+        requesterFollowsCaster,
+        likedCast,
+        recastedCast,
+        requesterVerifiedAddresses,
+        requesterUserData,
+      } = frameMessage;
+
+      console.log("info: frameMessage is:", frameMessage);
+    }
     throw new Error("Invalid frame payload");
   }
 
@@ -89,24 +105,6 @@ export default async function Home({
   // example: load the users credentials & check they have an NFT
 
   console.log("info: state is:", state);
-
-  if (frameMessage) {
-    const {
-      isValid,
-      buttonIndex,
-      inputText,
-      castId,
-      requesterFid,
-      casterFollowsRequester,
-      requesterFollowsCaster,
-      likedCast,
-      recastedCast,
-      requesterVerifiedAddresses,
-      requesterUserData,
-    } = frameMessage;
-
-    console.log("info: frameMessage is:", frameMessage);
-  }
 
   const baseUrl = process.env.NEXT_PUBLIC_HOST || "http://localhost:3000";
 
