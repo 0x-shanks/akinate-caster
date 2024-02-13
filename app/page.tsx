@@ -13,33 +13,33 @@ import { DEBUG_HUB_OPTIONS } from "./debug/constants";
 import { Aki } from "aki-api";
 
 type State = {
-  active: number;
-  step: number;
-  session: string;
-  signature: string;
-  uid: string;
-  frontaddr: string;
+  a: number; //active
+  st: number; //step
+  se: string; //session
+  si: string; //signature
+  u: string; //uid
+  f: string; //frontaddr
 };
 
 const initialState = {
-  active: 0,
-  step: 0,
-  session: "",
-  signature: "",
-  uid: "",
-  frontaddr: "",
+  a: 0,
+  st: 0,
+  se: "",
+  si: "",
+  u: "",
+  f: "",
 };
 
 const reducer: FrameReducer<State> = (state, action) => {
   return {
-    active: action.postBody?.untrustedData.buttonIndex
+    a: action.postBody?.untrustedData.buttonIndex
       ? action.postBody?.untrustedData.buttonIndex
       : 0,
-    step: state.step,
-    session: state.session,
-    signature: state.signature,
-    uid: state.uid,
-    frontaddr: state.frontaddr,
+    st: state.st,
+    se: state.se,
+    si: state.si,
+    u: state.u,
+    f: state.f,
   };
 };
 
@@ -114,7 +114,7 @@ export default async function Home({
   const childMode = true;
 
   let aki: Aki;
-  if (state.session == "") {
+  if (state.se == "") {
     aki = new Aki({
       region,
       childMode,
@@ -124,18 +124,15 @@ export default async function Home({
     aki = new Aki({
       region,
       childMode,
-      currentStep: state.step,
-      session: state.session,
-      signature: state.signature,
-      uid: state.uid,
-      frontaddr: state.frontaddr,
+      currentStep: state.st,
+      session: state.se,
+      signature: state.si,
+      uid: state.u,
+      frontaddr: state.f,
     });
     await aki.startWithoutSession();
-    console.log(
-      "answer",
-      state?.active <= 2 ? state?.active - 1 : state?.active
-    );
-    await aki.step(state?.active <= 2 ? state?.active - 1 : state?.active);
+    console.log("answer", state?.a <= 2 ? state?.a - 1 : state?.a);
+    await aki.step(state?.a <= 2 ? state?.a - 1 : state?.a);
   }
 
   const isEnd = aki.progress >= 90 || aki.currentStep >= 78;
@@ -175,11 +172,11 @@ export default async function Home({
         postUrl={`${baseUrl}/frames`}
         state={{
           ...state,
-          step: aki.currentStep,
-          session: aki.session ?? "",
-          signature: aki.signature ?? "",
-          uid: aki.uid ?? "",
-          frontaddr: aki.frontaddr ?? "",
+          st: aki.currentStep,
+          se: aki.session ?? "",
+          si: aki.signature ?? "",
+          u: aki.uid ?? "",
+          f: aki.frontaddr ?? "",
         }}
         previousFrame={previousFrame}
       >
