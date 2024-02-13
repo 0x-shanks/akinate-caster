@@ -128,7 +128,13 @@ export default async function Home({
       frontaddr: state.f,
     });
     await aki.startWithoutSession();
-    await aki.step(state?.a <= 2 ? state?.a - 1 : state?.a);
+
+    try {
+      await aki.step(state?.a <= 2 ? state?.a - 1 : state?.a);
+    } catch (e) {
+      console.log("step error", e);
+      await aki.start();
+    }
   }
 
   const isEnd = aki.progress >= 90 || aki.currentStep >= 78;
