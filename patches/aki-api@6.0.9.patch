@@ -55,6 +55,18 @@ index 41c8b86b0640c3ee7b0d9976d07aeac485fed572..6cde28774f7556ee929b0951c307b160
      /*
       * Continue to guess after a "win" (contine to play after a wrong result).
       */
+diff --git a/dist/src/functions/Request.js b/dist/src/functions/Request.js
+index 8dfdd78072a818ea8e1fa08705df5a839436a84c..1bd2a7a37aa952705cfcbde91a31adf4bb505d9e 100644
+--- a/dist/src/functions/Request.js
++++ b/dist/src/functions/Request.js
+@@ -75,6 +75,7 @@ const request = async (url, checkParamProperty, region, axiosConfig) => {
+     if (status !== 200 || !data) {
+         throw new Error(`A problem occurred with making the request. status: ${status}`);
+     }
++    console.log("request", data);
+     const beginningParse = data.indexOf('(');
+     const jsonString = data.substring(beginningParse + 1, data.length - 1);
+     const result = JSON.parse(jsonString);
 diff --git a/dist/src/index.js b/dist/src/index.js
 index 0a446c886cd15392b5da0d182eecd94ec8bb1a0b..814dca8759abfc381538a4c2454c128457c24f9b 100644
 --- a/dist/src/index.js
