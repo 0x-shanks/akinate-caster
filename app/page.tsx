@@ -172,7 +172,7 @@ export default async function Home({
       </div>
 
       <FrameContainer
-        postUrl="/frames"
+        postUrl={`${baseUrl}/frames`}
         state={{
           ...state,
           step: aki.currentStep,
