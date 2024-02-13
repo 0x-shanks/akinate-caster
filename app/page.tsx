@@ -8,7 +8,6 @@ import {
   useFramesReducer,
   getFrameMessage,
 } from "frames.js/next/server";
-import { DEBUG_HUB_OPTIONS } from "./debug/constants";
 import { Aki } from "aki-api";
 
 type State = {
@@ -104,7 +103,7 @@ export default async function Home({
   // Here: do a server side side effect either sync or async (using await), such as minting an NFT if you want.
   // example: load the users credentials & check they have an NFT
 
-  // console.log("info: state is:", state);
+  console.log("info: state is:", state);
 
   const baseUrl = process.env.NEXT_PUBLIC_HOST || "http://localhost:3000";
 
